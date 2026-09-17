@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="一个简单清新的每日习惯打卡工具，可添加、管理和完成自己的习惯。"
+    />
+    <meta name="color-scheme" content="light" />
+    <title>今日习惯 | 习惯打卡</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="page-glow page-glow--one" aria-hidden="true"></div>
+    <div class="page-glow page-glow--two" aria-hidden="true"></div>
+
+    <div class="app-shell">
+      <header class="app-header">
+        <div class="header-copy">
+          <p class="eyebrow" id="currentDate">今天</p>
+          <h1>今日习惯</h1>
+          <p class="today-count" id="todayCount" aria-live="polite">今日完成 0 项</p>
+        </div>
+
+        <div class="header-actions">
+          <button class="button button--secondary" id="editModeButton" type="button" aria-pressed="false" disabled>
+            管理习惯
+          </button>
+          <button class="button button--primary" id="addHabitButton" type="button">
+            <span aria-hidden="true">＋</span>
+            添加习惯
+          </button>
+        </div>
+      </header>
+
+      <div class="notice" id="storageNotice" role="status" hidden></div>
+
+      <main class="main-content">
+        <section class="habit-list" id="habitList" aria-label="习惯列表"></section>
+
+        <section class="empty-state" id="emptyState" hidden>
+          <div class="empty-state__icon" aria-hidden="true">🌱</div>
+          <h2>从一个小习惯开始</h2>
+          <p>添加今天想坚持的事情，完成后轻轻点一下。</p>
+          <button class="button button--primary" id="emptyAddButton" type="button">添加第一个习惯</button>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <p>数据保存在当前浏览器中，建议定期导出备份。</p>
+        <div class="data-actions">
+          <button class="text-button" id="exportButton" type="button">导出备份</button>
+          <button class="text-button" id="importButton" type="button">导入备份</button>
+          <input id="importInput" type="file" accept=".json,application/json" hidden />
+        </div>
+      </footer>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <dialog class="modal" id="onboardingDialog" aria-labelledby="onboardingTitle">
+      <div class="modal-panel">
+        <div class="modal-heading-row">
+          <div>
+            <p class="modal-kicker">欢迎使用</p>
+            <h2 id="onboardingTitle">先选几个想坚持的习惯</h2>
+          </div>
+        </div>
+
+        <p class="modal-description">可以多选，之后再随时添加、修改或删除。</p>
+        <div class="template-grid" id="onboardingTemplates"></div>
+        <p class="form-error" id="onboardingError" hidden></p>
+
+        <div class="modal-actions modal-actions--split">
+          <button class="button button--ghost" id="skipOnboardingButton" type="button">先不添加</button>
+          <button class="button button--primary" id="addOnboardingButton" type="button" disabled>添加所选习惯</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="modal" id="habitDialog" aria-labelledby="habitDialogTitle">
+      <div class="modal-panel">
+        <div class="modal-heading-row">
+          <div>
+            <p class="modal-kicker" id="habitDialogKicker">新习惯</p>
+            <h2 id="habitDialogTitle">添加习惯</h2>
+          </div>
+          <button class="icon-button" id="closeHabitDialogButton" type="button" aria-label="关闭">×</button>
+        </div>
+
+        <div class="tab-list" id="habitTabs" role="tablist" aria-label="添加方式">
+          <button
+            class="tab-button is-active"
+            id="customHabitTab"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="customHabitPanel"
+            data-tab="custom"
+          >
+            自定义
+          </button>
+          <button
+            class="tab-button"
+            id="templateHabitTab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="templateHabitPanel"
+            data-tab="template"
+          >
+            习惯模板
+          </button>
+        </div>
+
+        <form id="habitForm" novalidate>
+          <div class="tab-panel" id="customHabitPanel" role="tabpanel" aria-labelledby="customHabitTab">
+            <label class="field-label" for="habitName">
+              习惯名称
+              <span>最多 20 字</span>
+            </label>
+            <input
+              class="text-input"
+              id="habitName"
+              name="habitName"
+              type="text"
+              maxlength="20"
+              autocomplete="off"
+              placeholder="例如：每天喝八杯水"
+            />
+
+            <div class="field-group">
+              <label class="field-label" for="habitEmoji">选择 Emoji</label>
+              <div class="emoji-picker">
+                <input
+                  class="text-input emoji-input"
+                  id="habitEmoji"
+                  name="habitEmoji"
+                  type="text"
+                  maxlength="8"
+                  value="🎯"
+                  aria-label="输入一个 Emoji"
+                />
+                <div class="emoji-presets" id="emojiPresets" aria-label="常用 Emoji"></div>
+              </div>
+            </div>
+
+            <fieldset class="field-group color-fieldset">
+              <legend class="field-label">主题色</legend>
+              <div class="color-picker" id="colorPicker"></div>
+            </fieldset>
+
+            <p class="form-error" id="habitFormError" hidden></p>
+          </div>
+
+          <div
+            class="tab-panel"
+            id="templateHabitPanel"
+            role="tabpanel"
+            aria-labelledby="templateHabitTab"
+            hidden
+          >
+            <p class="modal-description">选择一个或多个模板，已存在的习惯会自动标记。</p>
+            <div class="template-grid" id="habitTemplates"></div>
+            <p class="form-error" id="templateFormError" hidden></p>
+          </div>
+
+          <div class="modal-actions" id="habitFormActions">
+            <button class="button button--ghost" id="cancelHabitButton" type="button">取消</button>
+            <button class="button button--primary" id="saveHabitButton" type="submit">保存</button>
+          </div>
+        </form>
+
+        <div class="modal-actions" id="templateActions" hidden>
+          <button class="button button--ghost" id="cancelTemplateButton" type="button">取消</button>
+          <button class="button button--primary" id="addSelectedTemplatesButton" type="button" disabled>
+            添加所选
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="modal" id="confirmDialog" aria-labelledby="confirmDialogTitle">
+      <div class="modal-panel modal-panel--compact">
+        <div class="modal-heading-row">
+          <div>
+            <p class="modal-kicker">请确认</p>
+            <h2 id="confirmDialogTitle">确认操作</h2>
+          </div>
+        </div>
+        <p class="modal-description" id="confirmDialogMessage"></p>
+        <div class="modal-actions">
+          <button class="button button--ghost" id="cancelConfirmButton" type="button">取消</button>
+          <button class="button button--danger" id="confirmActionButton" type="button">确认</button>
+        </div>
+      </div>
+    </dialog>
+
+    <noscript>
+      <div class="noscript-message">请启用 JavaScript 后使用习惯打卡功能。</div>
+    </noscript>
+  </body>
+</html>
